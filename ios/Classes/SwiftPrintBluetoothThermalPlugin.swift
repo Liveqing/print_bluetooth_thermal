@@ -15,6 +15,8 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
     var flutterResult: FlutterResult? //para el resul de flutter
     var bytes: [UInt8]? //variable para almacenar los bytes que llegan
     var stringprint = ""; //variable para almacenar los string que llegan
+    
+    var flutterChannel: FlutterMethodChannel?
 
     // En el método init, inicializa el gestor central con un delegado
     //para solicitar el permiso del bluetooth
@@ -23,17 +25,14 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
     }
 
   public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "groons.web.app/print", binaryMessenger: registrar.messenger())
     let instance = SwiftPrintBluetoothThermalPlugin()
-    registrar.addMethodCallDelegate(instance, channel: channel)
+    instance.flutterChannel = FlutterMethodChannel(name: "groons.web.app/print", binaryMessenger: registrar.messenger())
+    registrar.addMethodCallDelegate(instance, channel: instance.flutterChannel!)
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     // En el método init, inicializa el gestor central con un delegado
-    //para solicitar el permiso del bluetooth
-    if (self.centralManager == nil) {
-        self.centralManager = CBCentralManager(delegate: self, queue: nil)
-    }
+    
 
     //para iniciar la variable result
     self.flutterResult = result
@@ -48,6 +47,10 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
       let batteryLevel = device.batteryLevel * 100
       result(Int(batteryLevel))
     } else if call.method == "bluetoothenabled"{
+      //para solicitar el permiso del bluetooth
+      if (self.centralManager == nil) {
+          self.centralManager = CBCentralManager(delegate: self, queue: nil)
+      }
       switch centralManager?.state {
       case .poweredOn:
           result(true)
@@ -55,7 +58,10 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
           result(false)
       }
     } else if call.method == "ispermissionbluetoothgranted"{
-      //let centralManager = CBCentralManager()
+      //para solicitar el permiso del bluetooth
+      if (self.centralManager == nil) {
+          self.centralManager = CBCentralManager(delegate: self, queue: nil)
+      }
       if #available(iOS 10.0, *) {
         switch centralManager?.state {
         case .poweredOn:
@@ -70,6 +76,10 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
       //print("buscando bluetooths");
       //let discoveredDevices = scanForBluetoothDevices(duration: 5.0)
       //print("Discovered devices: \(discoveredDevices)")
+      //para solicitar el permiso del bluetooth
+      if (self.centralManager == nil) {
+          self.centralManager = CBCentralManager(delegate: self, queue: nil)
+      }
       switch centralManager?.state {
         case .unknown:
             //print("El estado del bluetooth es desconocido")
@@ -106,7 +116,11 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
 
     } 
     else if call.method == "connect"{
-        let macAddress = call.arguments as! String 
+        //para solicitar el permiso del bluetooth
+        if (self.centralManager == nil) {
+            self.centralManager = CBCentralManager(delegate: self, queue: nil)
+        }
+        let macAddress = call.arguments as! String
         // Busca el dispositivo con la dirección MAC dada
         let peripherals = centralManager?.retrievePeripherals(withIdentifiers: [UUID(uuidString: macAddress)!])
         guard let peripheral = peripherals?.first else {
@@ -230,6 +244,10 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
             result(false)
         }
         } else if call.method == "disconnect"{
+            //para solicitar el permiso del bluetooth
+            if (self.centralManager == nil) {
+                self.centralManager = CBCentralManager(delegate: self, queue: nil)
+            }
         centralManager?.cancelPeripheralConnection(connectedPeripheral)
         targetCharacteristic = nil
         //la respuesta va en centralManager segunda funcion
@@ -338,29 +356,38 @@ public class SwiftPrintBluetoothThermalPlugin: NSObject, CBCentralManagerDelegat
     }
     
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        var state: String
         switch central.state {
             case .poweredOn:
-                // El bluetooth está encendido y listo para usar
+                // El bluetooth está encendido y listo para usar 蓝牙已开启且可用
                 print("Bluetooth está encendido")
+                state = "poweredOn"
             case .poweredOff:
-                // El bluetooth está apagado
+                // El bluetooth está apagado 蓝牙已关闭
                 print("Bluetooth está apagado")
+                state = "poweredOff"
             case .resetting:
-                // El bluetooth está reiniciándose
+                // El bluetooth está reiniciándose 蓝牙正在重置
                 print("Bluetooth está reiniciándose")
+                state = "resetting"
             case .unauthorized:
-                // La app no tiene permiso para usar el bluetooth
+                // La app no tiene permiso para usar el bluetooth 用户拒绝了蓝牙权限
                 print("La app no tiene permiso para usar el bluetooth")
+                state = "unauthorized"
             case .unsupported:
-                // El dispositivo no soporta el bluetooth
+                // El dispositivo no soporta el bluetooth 设备不支持蓝牙
                 print("El dispositivo no soporta el bluetooth")
+                state = "unsupported"
             case .unknown:
-                // El estado del bluetooth es desconocido
+                // El estado del bluetooth es desconocido 蓝牙状态未知
                 print("El estado del bluetooth es desconocido")
+                state = "unknown"
             @unknown default:
-                // Otro caso no esperado
+                // Otro caso no esperado 蓝牙状态异常
                 print("Otro caso no esperado")
+                state = "unknown"
         }
+        self.flutterChannel?.invokeMethod("bluetoothStateChanged", arguments: state)
     }
 
 }

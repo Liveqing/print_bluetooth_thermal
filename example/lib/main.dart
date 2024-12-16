@@ -35,7 +35,10 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    PrintBluetoothThermal.setIOSBluetoothStateListener((state){
+      //状态回调
+      print("ios bluetooth state: $state");
+    });
   }
 
   @override
@@ -90,9 +93,14 @@ class _MyAppState extends State<MyApp> {
           scrollDirection: Axis.vertical,
           child: Container(
             padding: EdgeInsets.all(20),
+            //child: Text('abc 123456'),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ElevatedButton(
+                  onPressed: init,
+                  child: Text("init bluetooth"),
+                ),
                 Text('info: $_info\n '),
                 Text(_msj),
                 Row(
@@ -221,33 +229,36 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initPlatformState() async {
-    String platformVersion;
-    int porcentbatery = 0;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      platformVersion = await PrintBluetoothThermal.platformVersion;
-      //print("patformversion: $platformVersion");
-      porcentbatery = await PrintBluetoothThermal.batteryLevel;
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    final bool result = await PrintBluetoothThermal.bluetoothEnabled;
-    print("bluetooth enabled: $result");
-    if (result) {
-      _msj = "Bluetooth enabled, please search and connect";
-    } else {
-      _msj = "Bluetooth not enabled";
-    }
-
-    setState(() {
-      _info = platformVersion + " ($porcentbatery% battery)";
-    });
+    bool status = await PrintBluetoothThermal.isPermissionBluetoothGranted;
+    print("permission bluetooth granted: $status");
+    // String platformVersion;
+    // int porcentbatery = 0;
+    // // Platform messages may fail, so we use a try/catch PlatformException.
+    // try {
+    //   platformVersion = await PrintBluetoothThermal.platformVersion;
+    //   //print("patformversion: $platformVersion");
+    //   porcentbatery = await PrintBluetoothThermal.batteryLevel;
+    // } on PlatformException {
+    //   platformVersion = 'Failed to get platform version.';
+    // }
+    //
+    // // If the widget was removed from the tree while the asynchronous platform
+    // // message was in flight, we want to discard the reply rather than calling
+    // // setState to update our non-existent appearance.
+    // if (!mounted) return;
+    //
+    // final bool result = await PrintBluetoothThermal.bluetoothEnabled;
+    // print("bluetooth enabled: $result");
+    // if (result) {
+    //   _msj = "Bluetooth enabled, please search and connect";
+    // } else {
+    //   _msj = "Bluetooth not enabled";
+    // }
+    //
+    // setState(() {
+    //   _info = platformVersion + " ($porcentbatery% battery)";
+    // });
   }
 
   Future<void> getBluetoots() async {
@@ -298,6 +309,11 @@ class _MyAppState extends State<MyApp> {
       connected = false;
     });
     print("status disconnect $status");
+  }
+
+  Future<void> init() async {
+    initPlatformState();
+    print("initPlatformState >>>>>>>>>");
   }
 
   Future<void> printTest() async {

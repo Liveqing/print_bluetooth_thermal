@@ -24,6 +24,14 @@ class PrintBluetoothThermal {
     return bluetoothState;
   }
 
+  static void setIOSBluetoothStateListener(Function(String) listener) {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == "bluetoothStateChanged") {
+        listener(call.arguments as String);
+      }
+    });
+  }
+
   ///returns true if bluetooth is on
   static Future<bool> get bluetoothEnabled async {
     //bluetooth esta prendido?
